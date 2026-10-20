@@ -11,7 +11,8 @@ This is the next-generation addon: it uses the new gpio2mqtt MQTT topic
 structure by default, which changes the entity IDs created in Home Assistant.
 It lives alongside the legacy
 [jethub-mqtt-io](https://github.com/jethome-hassio-addons/addon-jethub-mqtt-io)
-addon — do not run both at the same time, they claim the same GPIO lines.
+addon and refuses to start while that one is running (both claim the same
+GPIO lines) — stop the legacy add-on first.
 
 **Note**: _All used GPIOs will **disappear** from **/sys/class/gpio** during addon run_
 

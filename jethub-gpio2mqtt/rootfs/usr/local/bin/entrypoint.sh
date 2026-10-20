@@ -92,6 +92,50 @@ discover_mqtt() {
     log_info "Discovered MQTT: host=$MQTT_HOST, port=$MQTT_PORT, user=$MQTT_USER"
 }
 
+# Guard: refuse to start while the legacy jethub-mqtt-io addon is running.
+# Both addons claim the same GPIO lines; the second one would just crash
+# with cryptic gpiod errors. Fail-open if the Supervisor API is not usable
+# (e.g. fully manual MQTT setup without supervisor access).
+check_legacy_addon() {
+    if [[ -z "${SUPERVISOR_TOKEN:-}" ]]; then
+        log_info "No Supervisor token, skipping legacy addon check"
+        return 0
+    fi
+
+    local response
+    response=$(curl -s --connect-timeout 5 --max-time 10 \
+        -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        "http://supervisor/info" 2>/dev/null) || {
+        log_info "Supervisor API not reachable, skipping legacy addon check"
+        return 0
+    }
+
+    if ! echo "$response" | jq -e '.result == "ok"' >/dev/null 2>&1; then
+        log_info "Supervisor info not available, skipping legacy addon check"
+        return 0
+    fi
+
+    local legacy_state
+    legacy_state=$(echo "$response" | jq -r \
+        '.data.addons[]? | select(.slug == "jethub-mqtt-io") | .state' 2>/dev/null)
+
+    case "$legacy_state" in
+        started|startup)
+            log_error "The legacy jethub-mqtt-io add-on is currently running."
+            log_error "Both add-ons claim the same GPIO lines and cannot run at the same time."
+            log_error "Stop and disable the jethub-mqtt-io add-on, then start this add-on."
+            return 1
+            ;;
+        "")
+            log_info "Legacy jethub-mqtt-io add-on not installed - OK"
+            ;;
+        *)
+            log_info "Legacy jethub-mqtt-io add-on state: $legacy_state - OK"
+            ;;
+    esac
+    return 0
+}
+
 # Generate final configuration
 generate_config() {
     local base_config="$1"
@@ -310,6 +354,9 @@ main() {
     MQTT_QOS=$(get_nested_option "mqtt.qos" "1")
 
     log_info "Options: model=$JETHUB_MODEL, use_module=$USE_MODULE_CONFIG, log_level=$LOG_LEVEL"
+
+    # Refuse to start while the legacy jethub-mqtt-io addon is running
+    check_legacy_addon || exit 1
 
     # Check for whitespace-only custom config (used in multiple places)
     local trimmed_custom_config
