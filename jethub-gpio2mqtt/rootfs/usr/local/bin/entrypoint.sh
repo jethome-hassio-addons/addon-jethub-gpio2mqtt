@@ -1,6 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC1091
-# entrypoint.sh - Main entrypoint for JetHub GPIO2MQTT addon
+# entrypoint.sh - Main entrypoint for JetHome peripheral exposer addon
 #
 # Startup sequence:
 # 1. Read options from /data/options.json
@@ -336,7 +336,7 @@ substitute_d3_chip() {
 
 # Main function
 main() {
-    log_info "Starting JetHub GPIO2MQTT addon..."
+    log_info "Starting JetHome peripheral exposer addon..."
 
     # Check options file
     if [[ ! -f "$OPTIONS_FILE" ]]; then

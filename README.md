@@ -1,6 +1,6 @@
 ![alt text][logo]
 
-# Home Assistant Add-on: JetHome JetHub GPIO2MQTT peripheral exposer
+# Home Assistant Add-on: JetHome peripheral exposer
 
 ## About
 

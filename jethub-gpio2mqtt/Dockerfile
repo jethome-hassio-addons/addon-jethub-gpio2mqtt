@@ -95,7 +95,7 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 ARG BUILD_ARCH
 ARG BUILD_DATE
 ARG BUILD_DESCRIPTION="Expose JetHome JetHub (D1/D2/D3/H1) peripheral (relays, inputs, UXM control) via gpio2mqtt"
-ARG BUILD_NAME="JetHome JetHub GPIO2MQTT peripheral exposer"
+ARG BUILD_NAME="JetHome peripheral exposer"
 ARG BUILD_REF
 ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
