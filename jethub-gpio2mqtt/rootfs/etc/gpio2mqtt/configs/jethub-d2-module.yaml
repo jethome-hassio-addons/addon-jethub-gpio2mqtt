@@ -46,7 +46,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub User Button
+      name: User Button
 
   # Digital inputs on I2C expander
   - name: jethub_input_1
@@ -55,7 +55,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Input 1
+      name: Input 1
 
   - name: jethub_input_2
     module: gpio_expander
@@ -63,7 +63,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Input 2
+      name: Input 2
 
   - name: jethub_input_3
     module: gpio_expander
@@ -71,7 +71,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Input 3
+      name: Input 3
 
 digital_outputs:
   # Relays on I2C expander
@@ -81,7 +81,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub Relay 1
+      name: Relay 1
 
   - name: jethub_relay_2
     module: gpio_expander
@@ -89,7 +89,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub Relay 2
+      name: Relay 2
 
   # UXM module slot 1 control
   - name: uxm1_reset
@@ -98,7 +98,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub UXM1 RESET
+      name: UXM1 RESET
 
   - name: uxm1_boot
     module: gpio_expander
@@ -106,7 +106,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub UXM1 BOOT
+      name: UXM1 BOOT
 
   # UXM module slot 2 control
   - name: uxm2_reset
@@ -115,7 +115,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub UXM2 RESET
+      name: UXM2 RESET
 
   - name: uxm2_boot
     module: gpio_expander
@@ -123,7 +123,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub UXM2 BOOT
+      name: UXM2 BOOT
 
 options:
   convention: homeassistant

@@ -166,6 +166,7 @@ generate_config() {
     export GPIO2MQTT_MQTT_LEGACY_MQTTIO="$MQTT_LEGACY_MQTTIO"
     export GPIO2MQTT_MQTT_KEEPALIVE="$MQTT_KEEPALIVE"
     export GPIO2MQTT_MQTT_QOS="$MQTT_QOS"
+    export GPIO2MQTT_RESTORE_MODE="$RESTORE_MODE"
 
     # Update MQTT settings using Python (more reliable YAML handling)
     python3 << 'PYTHON_EOF'
@@ -212,6 +213,7 @@ mqtt_topic_prefix = os.environ.get('GPIO2MQTT_MQTT_TOPIC_PREFIX', '')
 mqtt_legacy_mqttio = os.environ.get('GPIO2MQTT_MQTT_LEGACY_MQTTIO', 'false')
 mqtt_keepalive = os.environ.get('GPIO2MQTT_MQTT_KEEPALIVE', '')
 mqtt_qos = os.environ.get('GPIO2MQTT_MQTT_QOS', '')
+restore_mode = os.environ.get('GPIO2MQTT_RESTORE_MODE', '')
 
 try:
     with open(config_path, 'r') as f:
@@ -251,6 +253,14 @@ try:
 
     # Set legacy_mqttio boolean
     config['mqtt']['legacy_mqttio'] = mqtt_legacy_mqttio.lower() == 'true'
+
+    # Apply the addon-level restore_mode to outputs that don't define their
+    # own restore_mode/restore_state (the two keys are mutually exclusive in
+    # gpio2mqtt and setting both is rejected at startup)
+    if restore_mode:
+        for output in config.get('digital_outputs') or []:
+            if isinstance(output, dict) and 'restore_mode' not in output and 'restore_state' not in output:
+                output['restore_mode'] = restore_mode
 
     with open(config_path, 'w') as f:
         yaml.dump(config, f, Dumper=SafeDumperPreserveStrings, default_flow_style=False, allow_unicode=True)
@@ -339,6 +349,7 @@ main() {
     JETHUB_MODEL=$(get_option "jethub_model" "auto")
     USE_MODULE_CONFIG=$(get_option "use_module_config" "false")
     CUSTOM_CONFIG=$(get_option "custom_config" "")
+    RESTORE_MODE=$(get_option "restore_mode" "restore")
     MQTT_CLIENT_ID=$(get_nested_option "mqtt.client_id" "jethub-gpio2mqtt")
     MQTT_TOPIC_PREFIX=$(get_nested_option "mqtt.topic_prefix" "jethub-gpio2mqtt")
     MQTT_LEGACY_MQTTIO=$(get_nested_option "mqtt.legacy_mqttio" "false")

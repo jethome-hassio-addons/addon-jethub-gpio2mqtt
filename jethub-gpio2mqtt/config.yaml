@@ -19,6 +19,7 @@ options:
   log_level: info
   jethub_model: auto
   use_module_config: false
+  restore_mode: restore
   custom_config: ""
   mqtt:
     client_id: jethub-gpio2mqtt
@@ -31,6 +32,7 @@ schema:
   log_level: list(trace|debug|info|warning|error)
   jethub_model: list(auto|jethub-d1|jethub-d2|jethub-d3|jethub-h1|manual)
   use_module_config: bool
+  restore_mode: list(restore|off|on)
   custom_config: str?
   mqtt:
     host: str?

@@ -42,7 +42,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub H1 LED
+      name: Status LED
 
   # ZigBee module control
   - name: zigbee_reset
@@ -51,7 +51,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub H1 ZigBee RESET
+      name: ZigBee RESET
 
   - name: zigbee_boot
     module: gpio
@@ -59,7 +59,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub H1 ZigBee BOOT
+      name: ZigBee BOOT
 
   # Module-2 slot control
   - name: module2_reset
@@ -68,7 +68,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub H1 Module-2 RESET
+      name: Module-2 RESET
 
   - name: module2_boot
     module: gpio_ao
@@ -76,7 +76,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub H1 Module-2 BOOT
+      name: Module-2 BOOT
 
 options:
   convention: homeassistant

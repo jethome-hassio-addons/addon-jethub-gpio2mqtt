@@ -210,6 +210,10 @@ detect_model() {
 
     # Could not detect model
     echo "[detect-model] ERROR: Could not detect JetHub model using any method" >&2
+    echo "[detect-model] HINT: On Supervised installs the Supervisor reports a generic" >&2
+    echo "[detect-model] HINT: machine (e.g. qemuarm-64) and the device tree may not be" >&2
+    echo "[detect-model] HINT: visible inside the container. Set jethub_model explicitly" >&2
+    echo "[detect-model] HINT: in the addon configuration (jethub-d1/d2/d3/h1)." >&2
     return 1
 }
 

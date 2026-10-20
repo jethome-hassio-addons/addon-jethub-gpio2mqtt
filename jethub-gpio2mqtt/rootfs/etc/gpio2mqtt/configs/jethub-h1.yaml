@@ -36,7 +36,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub H1 LED
+      name: Status LED
 
 options:
   convention: homeassistant

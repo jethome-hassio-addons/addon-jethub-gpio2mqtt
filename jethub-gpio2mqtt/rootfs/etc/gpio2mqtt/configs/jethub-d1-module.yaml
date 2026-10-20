@@ -38,7 +38,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Front Button
+      name: Front Button
 
   # Digital inputs (accent connectors)
   - name: jethub_input_1
@@ -47,7 +47,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Input 1
+      name: Input 1
 
   - name: jethub_input_2
     module: gpio
@@ -55,7 +55,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Input 2
+      name: Input 2
 
   - name: jethub_input_3
     module: gpio
@@ -63,7 +63,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Input 3
+      name: Input 3
 
   - name: jethub_input_4
     module: gpio
@@ -71,7 +71,7 @@ digital_inputs:
     poll_interval: 0.05
     ha_discovery:
       component: binary_sensor
-      name: JetHub Input 4
+      name: Input 4
 
 digital_outputs:
   # Status LED (accent bi-color LED)
@@ -82,7 +82,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub stat LED red
+      name: Status LED Red
 
   - name: stat_led_green
     module: gpio
@@ -91,7 +91,7 @@ digital_outputs:
     default: "on"
     ha_discovery:
       component: switch
-      name: JetHub stat LED green
+      name: Status LED Green
 
   # Relays
   - name: jethub_relay_1
@@ -100,7 +100,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub Relay 1
+      name: Relay 1
 
   - name: jethub_relay_2
     module: gpio
@@ -108,7 +108,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub Relay 2
+      name: Relay 2
 
   - name: jethub_relay_3
     module: gpio
@@ -116,7 +116,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub Relay 3
+      name: Relay 3
 
   # ZigBee module control
   - name: zigbee_boot
@@ -126,7 +126,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub ZigBee BOOT
+      name: ZigBee BOOT
 
   - name: zigbee_reset
     module: gpio
@@ -134,7 +134,7 @@ digital_outputs:
     default: "off"
     ha_discovery:
       component: switch
-      name: JetHub ZigBee RESET
+      name: ZigBee RESET
 
 options:
   convention: homeassistant
