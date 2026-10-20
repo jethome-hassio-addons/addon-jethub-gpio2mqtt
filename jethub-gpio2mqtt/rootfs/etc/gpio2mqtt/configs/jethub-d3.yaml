@@ -1,5 +1,5 @@
 ---
-# JetHub D3 / D3-mini (J310) Configuration for gpio2mqtt
+# JetHub D3 (J310) Configuration for gpio2mqtt
 #
 # D3 is a modular controller: the base board has no relays or digital inputs.
 # User-controllable GPIO lines are the UXM module control lines (RESET/MODE)
@@ -109,4 +109,4 @@ options:
   device:
     name: JetHub D3
     manufacturer: JetHome
-    model: JetHub D3-mini (J310)
+    model: JetHub D3 (J310)

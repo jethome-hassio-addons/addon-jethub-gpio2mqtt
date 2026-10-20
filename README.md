@@ -47,7 +47,7 @@ For Home Assistant Supervised, please select your device manually in the configu
 - 3 inputs
 - (optional) UXM slots control (BOOT, RESET)
 
-### [JetHome JetHub D3-mini](https://docs.iot.jethome.com) (modular controller, 4 UXM slots)
+### [JetHome JetHub D3](https://docs.iot.jethome.com) (modular controller, 4 UXM slots)
 
 **Exposed peripheral:**
 

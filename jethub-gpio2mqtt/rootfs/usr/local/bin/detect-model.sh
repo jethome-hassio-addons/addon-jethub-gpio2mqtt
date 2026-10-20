@@ -85,7 +85,7 @@ detect_via_dt_model() {
         "JetHome JetHub D2")
             model="jethub-d2"
             ;;
-        "JetHome JetHub D3-mini")
+        "JetHome JetHub D3")
             model="jethub-d3"
             ;;
     esac
