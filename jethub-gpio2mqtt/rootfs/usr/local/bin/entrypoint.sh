@@ -96,28 +96,50 @@ discover_mqtt() {
 # Both addons claim the same GPIO lines; the second one would just crash
 # with cryptic gpiod errors. Fail-open if the Supervisor API is not usable
 # (e.g. fully manual MQTT setup without supervisor access).
+#
+# NOTE on endpoints: GET /info is the ROOT endpoint and does NOT include the
+# installed add-ons list. The per-add-on state lives in
+# GET /addons/{slug}/info (primary) and GET /supervisor/info (fallback,
+# its v1 payload embeds an addons array). Both match the /.+/info access
+# pattern granted to add-on tokens with the default hassio role.
 check_legacy_addon() {
     if [[ -z "${SUPERVISOR_TOKEN:-}" ]]; then
         log_info "No Supervisor token, skipping legacy addon check"
         return 0
     fi
 
-    local response
-    response=$(curl -s --connect-timeout 5 --max-time 10 \
+    local legacy_state response http_code
+    legacy_state=""
+
+    # Primary: ask the Supervisor directly about the legacy add-on
+    response=$(curl -s -w '\n%{http_code}' --connect-timeout 5 --max-time 10 \
         -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
-        "http://supervisor/info" 2>/dev/null) || {
-        log_info "Supervisor API not reachable, skipping legacy addon check"
-        return 0
-    }
+        "http://supervisor/addons/jethub-mqtt-io/info" 2>/dev/null) || true
+    http_code="${response##*$'\n'}"
+    response="${response%$'\n'*}"
 
-    if ! echo "$response" | jq -e '.result == "ok"' >/dev/null 2>&1; then
-        log_info "Supervisor info not available, skipping legacy addon check"
+    if [[ "$http_code" == "200" ]] && echo "$response" | jq -e '.result == "ok"' >/dev/null 2>&1; then
+        legacy_state=$(echo "$response" | jq -r '.data.state // empty' 2>/dev/null)
+    elif [[ "$http_code" == "404" ]]; then
+        log_info "Legacy jethub-mqtt-io add-on not installed - OK"
         return 0
+    else
+        log_info "Legacy addon check: /addons/jethub-mqtt-io/info answered HTTP $http_code, falling back to /supervisor/info"
+        # Fallback: the v1 supervisor info embeds an addons array
+        response=$(curl -s -w '\n%{http_code}' --connect-timeout 5 --max-time 10 \
+            -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+            "http://supervisor/supervisor/info" 2>/dev/null) || true
+        http_code="${response##*$'\n'}"
+        response="${response%$'\n'*}"
+
+        if [[ "$http_code" == "200" ]] && echo "$response" | jq -e '.result == "ok"' >/dev/null 2>&1; then
+            legacy_state=$(echo "$response" | jq -r \
+                '.data.addons[]? | select(.slug == "jethub-mqtt-io") | .state' 2>/dev/null)
+        else
+            log_info "Legacy addon check: Supervisor API unavailable (HTTP $http_code), cannot verify - continuing anyway"
+            return 0
+        fi
     fi
-
-    local legacy_state
-    legacy_state=$(echo "$response" | jq -r \
-        '.data.addons[]? | select(.slug == "jethub-mqtt-io") | .state' 2>/dev/null)
 
     case "$legacy_state" in
         started|startup)
@@ -127,7 +149,7 @@ check_legacy_addon() {
             return 1
             ;;
         "")
-            log_info "Legacy jethub-mqtt-io add-on not installed - OK"
+            log_info "Legacy jethub-mqtt-io add-on not found in Supervisor - OK"
             ;;
         *)
             log_info "Legacy jethub-mqtt-io add-on state: $legacy_state - OK"
