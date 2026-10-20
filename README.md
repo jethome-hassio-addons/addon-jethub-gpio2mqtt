@@ -31,9 +31,6 @@ For Home Assistant Supervised, please select your device manually in the configu
 - internal stat LED (green/red)
 - (optional) ZigBee module control (BOOT, RESET)
 
-**Note**: _You still need to use HACS Home Assistant [1-Wire via sysbus](https://github.com/thecode/ha-onewire-sysbus) integration to expose 1-Wire device
-like temperature sensors `DS18B20`_
-
 ### [JetHome JetHub H1](https://jethome.ru/h1) (Basic version, ZigBee module)
 
 **Exposed peripheral:**
