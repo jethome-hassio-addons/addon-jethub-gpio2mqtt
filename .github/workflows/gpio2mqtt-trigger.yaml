@@ -1,0 +1,69 @@
+---
+name: gpio2mqtt Trigger
+
+# yamllint disable-line rule:truthy
+on:
+  repository_dispatch:
+    types:
+      - gpio2mqtt-build
+
+jobs:
+  update-versions:
+    name: Update gpio2mqtt versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Log event details
+        env:
+          PAYLOAD_VERSION: ${{ github.event.client_payload.version }}
+          PAYLOAD_TAG: ${{ github.event.client_payload.tag }}
+          PAYLOAD_IS_RELEASE: ${{ github.event.client_payload.is_release }}
+          PAYLOAD_IS_PRERELEASE: ${{ github.event.client_payload.is_prerelease }}
+          PAYLOAD_SOURCE_REPO: ${{ github.event.client_payload.source_repo }}
+        run: |
+          echo "## gpio2mqtt Build Event" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Version: ${PAYLOAD_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tag: ${PAYLOAD_TAG}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Is Release: ${PAYLOAD_IS_RELEASE}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Is Prerelease: ${PAYLOAD_IS_PRERELEASE}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Source: ${PAYLOAD_SOURCE_REPO}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout
+        if: github.event.client_payload.is_release == true
+        uses: actions/checkout@v4
+
+      - name: Update versions file
+        if: github.event.client_payload.is_release == true
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+          IS_PRERELEASE: ${{ github.event.client_payload.is_prerelease }}
+        run: |
+          cd jethub-gpio2mqtt
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            echo "Updating beta version to ${VERSION}"
+            jq --arg v "$VERSION" '.beta = $v' gpio2mqtt-versions.json > tmp.json
+            mv tmp.json gpio2mqtt-versions.json
+          else
+            echo "Updating stable and beta versions to ${VERSION}"
+            jq --arg v "$VERSION" '.stable = $v | .beta = $v' gpio2mqtt-versions.json > tmp.json
+            mv tmp.json gpio2mqtt-versions.json
+          fi
+          echo "### Updated versions:" >> "$GITHUB_STEP_SUMMARY"
+          cat gpio2mqtt-versions.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push
+        if: github.event.client_payload.is_release == true
+        env:
+          VERSION: ${{ github.event.client_payload.version }}
+          IS_PRERELEASE: ${{ github.event.client_payload.is_prerelease }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add jethub-gpio2mqtt/gpio2mqtt-versions.json
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            git commit -m "chore: update gpio2mqtt beta to ${VERSION}"
+          else
+            git commit -m "chore: update gpio2mqtt to ${VERSION}"
+          fi
+          git push
