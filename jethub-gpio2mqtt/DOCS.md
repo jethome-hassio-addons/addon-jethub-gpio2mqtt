@@ -20,6 +20,7 @@ Disable one before starting the other.
 | JetHub H1 (J80)      | JetHome ARM controller                                                |
 | JetHub D1/D1+ (J100) | JetHome ARM controller with 4 inputs, 3 relays, status LED            |
 | JetHub D2 (J200)     | JetHome ARM controller with 3 inputs, 2 relays, status LED, UXM slots |
+| JetHub D3-mini (J310) | JetHome modular ARM controller (S905Y5) with 4 UXM slots            |
 
 ## Configuration
 
@@ -81,6 +82,7 @@ JetHub model selection.
 - `jethub-h1` - JetHome JetHub H1 (J80)
 - `jethub-d1` - JetHome JetHub D1/D1+ (J100)
 - `jethub-d2` - JetHome JetHub D2 (J200)
+- `jethub-d3` - JetHome JetHub D3-mini (J310)
 - `manual` - Use custom configuration (requires `custom_config`)
 
 **Default**: `auto`
@@ -91,6 +93,9 @@ Use module configuration variant that includes additional GPIO pins
 for ZigBee/UXM module control (BOOT, RESET pins).
 
 **Default**: `false`
+
+**Note**: The JetHub D3 base configuration already includes the UXM control
+lines, so this option has no additional effect on D3 (the base config is used).
 
 ### Option: `custom_config`
 
@@ -200,6 +205,30 @@ Includes all basic resources plus UXM slot control pins:
 | uxm1_boot  | Output | UXM slot 1 BOOT pin  |
 | uxm2_reset | Output | UXM slot 2 RESET pin |
 | uxm2_boot  | Output | UXM slot 2 BOOT pin  |
+
+### JetHub D3-mini (J310)
+
+The D3 is a modular controller: the base board has no relays or digital
+inputs — I/O functions are provided by the plugged UXM modules. The addon
+exposes the UXM module control lines, which live on the TCA6408A I2C port
+expander (the chip is resolved automatically at startup):
+
+| Resource    | Type   | Description                |
+| ----------- | ------ | -------------------------- |
+| uxm1_reset  | Output | UXM slot 1 RESET (nRESET)  |
+| uxm1_mode   | Output | UXM slot 1 MODE (nMODE)    |
+| uxm2_reset  | Output | UXM slot 2 RESET           |
+| uxm2_mode   | Output | UXM slot 2 MODE            |
+| uxm3_reset  | Output | UXM slot 3 RESET           |
+| uxm3_mode   | Output | UXM slot 3 MODE            |
+| uxm4_reset  | Output | UXM slot 4 RESET           |
+| uxm4_mode   | Output | UXM slot 4 MODE            |
+
+Notes:
+
+- The RGB status LED is managed by the kernel `gpio-leds` driver and is
+  deliberately not exposed by this addon.
+- RESET/MODE switches are inverted (active-low): switch OFF = module running.
 
 ### JetHub H1 (Basic)
 

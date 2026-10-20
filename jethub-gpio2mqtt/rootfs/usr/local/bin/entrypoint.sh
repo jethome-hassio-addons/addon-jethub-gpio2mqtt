@@ -232,6 +232,54 @@ run_gpio_unexport() {
     fi
 }
 
+# Resolve the /dev/gpiochipN path of the TCA6408A UXM port expander (JetHub D3).
+# The expander sits on I2C (address 0x21); its gpiochip number depends on
+# driver probe order, so it is looked up via sysfs: i2c client named "tca6408"
+# -> matching /sys/class/gpiochipN device link.
+resolve_tca6408_chip() {
+    if [[ -n "${GPIO2MQTT_TCA6408_CHIP:-}" ]]; then
+        echo "${GPIO2MQTT_TCA6408_CHIP#/dev/}"
+        return 0
+    fi
+
+    local client_dir client gpiochip
+    for client_dir in /sys/bus/i2c/devices/*/; do
+        [[ -f "${client_dir}name" ]] || continue
+        if [[ "$(cat "${client_dir}name" 2>/dev/null)" == "tca6408" ]]; then
+            client=$(readlink -f "$client_dir")
+            for gpiochip in /sys/class/gpiochip*/; do
+                [[ -e "${gpiochip}device" ]] || continue
+                if [[ "$(readlink -f "${gpiochip}device")" == "$client" ]]; then
+                    basename "${gpiochip%/}"
+                    return 0
+                fi
+            done
+        fi
+    done
+    return 1
+}
+
+# Substitute the __TCA6408__ chip placeholder in the generated config
+substitute_d3_chip() {
+    local config_file="$1"
+
+    if ! grep -q "__TCA6408__" "$config_file"; then
+        return 0
+    fi
+
+    log_info "Resolving TCA6408 UXM expander gpiochip..."
+    local chip
+    if ! chip=$(resolve_tca6408_chip); then
+        log_error "TCA6408 port expander not found (no i2c client 'tca6408' with a gpiochip)"
+        log_error "Check that the expander is enabled in the device tree,"
+        log_error "or provide the full config with the chip path via custom_config"
+        return 1
+    fi
+
+    sed -i "s|__TCA6408__|/dev/$chip|g" "$config_file"
+    log_info "UXM expander chip resolved to: /dev/$chip"
+}
+
 # Main function
 main() {
     log_info "Starting JetHub GPIO2MQTT addon..."
@@ -293,6 +341,10 @@ main() {
         # Determine base config file
         if [[ "$USE_MODULE_CONFIG" == "true" ]]; then
             BASE_CONFIG="${CONFIGS_DIR}/${JETHUB_MODEL}-module.yaml"
+            if [[ ! -f "$BASE_CONFIG" ]]; then
+                log_info "No module config for ${JETHUB_MODEL}, using base config"
+                BASE_CONFIG="${CONFIGS_DIR}/${JETHUB_MODEL}.yaml"
+            fi
         else
             BASE_CONFIG="${CONFIGS_DIR}/${JETHUB_MODEL}.yaml"
         fi
@@ -331,6 +383,9 @@ main() {
 
     # Generate final config
     generate_config "$BASE_CONFIG" "$GENERATED_CONFIG"
+
+    # Resolve the D3 UXM expander chip placeholder (no-op for other models)
+    substitute_d3_chip "$GENERATED_CONFIG"
 
     # Run GPIO unexport
     run_gpio_unexport "$GENERATED_CONFIG"

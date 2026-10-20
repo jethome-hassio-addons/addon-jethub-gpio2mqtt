@@ -10,7 +10,7 @@
 set -euo pipefail
 
 # List of supported JetHub models
-SUPPORTED_MODELS="jethub-d1 jethub-d2 jethub-h1"
+SUPPORTED_MODELS="jethub-d1 jethub-d2 jethub-d3 jethub-h1"
 
 # Check if model is supported
 is_supported_model() {
@@ -85,6 +85,9 @@ detect_via_dt_model() {
         "JetHome JetHub D2")
             model="jethub-d2"
             ;;
+        "JetHome JetHub D3-mini")
+            model="jethub-d3"
+            ;;
     esac
 
     if [[ -n "$model" ]]; then
@@ -117,6 +120,9 @@ detect_via_dt_compatible() {
     elif echo "$compatible" | grep -q "jethome,jethub-j200"; then
         model="jethub-d2"
         echo "[detect-model] Detected via compatible: jethome,jethub-j200 -> $model" >&2
+    elif echo "$compatible" | grep -q "s7_s905y5_j310"; then
+        model="jethub-d3"
+        echo "[detect-model] Detected via compatible: s7_s905y5_j310 -> $model" >&2
     fi
 
     if [[ -n "$model" ]]; then
@@ -159,6 +165,9 @@ detect_via_cmdline() {
             ;;
         "jethub-j200")
             model="jethub-d2"
+            ;;
+        "j310")
+            model="jethub-d3"
             ;;
     esac
 

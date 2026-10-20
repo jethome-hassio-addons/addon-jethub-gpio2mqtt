@@ -1,0 +1,112 @@
+---
+# JetHub D3 / D3-mini (J310) Configuration for gpio2mqtt
+#
+# D3 is a modular controller: the base board has no relays or digital inputs.
+# User-controllable GPIO lines are the UXM module control lines (RESET/MODE)
+# on the TCA6408A I2C port expander (bus I2C_C, address 0x21).
+#
+# The RGB status LED is managed by the kernel gpio-leds driver and is NOT
+# exposed here (the lines are already claimed).
+#
+# The expander chip path is resolved at startup by entrypoint.sh and
+# substitutes the __TCA6408__ placeholder (i2c client "tca6408" -> gpiochip).
+
+mqtt:
+  host: XXXXXXXXXXXX
+  port: 1883
+  user: XXXXXXXXXXXX
+  password: XXXXXXXXXXXX
+  client_id: jethub-gpio2mqtt
+  topic_prefix: jethub-gpio2mqtt
+  status_payload_running: available
+  status_payload_stopped: unavailable
+  status_payload_dead: unavailable
+  ha_discovery:
+    enabled: true
+    prefix: homeassistant
+
+gpio_modules:
+  - name: uxm_expander
+    module: gpiod
+    chip: __TCA6408__
+
+digital_outputs:
+  # nRESET lines are active-low: switch OFF (line high) = module running
+  - name: uxm1_reset
+    module: uxm_expander
+    pin: 0
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM1 Reset
+
+  - name: uxm1_mode
+    module: uxm_expander
+    pin: 1
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM1 Mode
+
+  - name: uxm2_reset
+    module: uxm_expander
+    pin: 2
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM2 Reset
+
+  - name: uxm2_mode
+    module: uxm_expander
+    pin: 3
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM2 Mode
+
+  - name: uxm3_reset
+    module: uxm_expander
+    pin: 4
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM3 Reset
+
+  - name: uxm3_mode
+    module: uxm_expander
+    pin: 5
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM3 Mode
+
+  - name: uxm4_reset
+    module: uxm_expander
+    pin: 6
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM4 Reset
+
+  - name: uxm4_mode
+    module: uxm_expander
+    pin: 7
+    inverted: true
+    default: "off"
+    ha_discovery:
+      component: switch
+      name: UXM4 Mode
+
+options:
+  convention: homeassistant
+  device:
+    name: JetHub D3
+    manufacturer: JetHome
+    model: JetHub D3-mini (J310)

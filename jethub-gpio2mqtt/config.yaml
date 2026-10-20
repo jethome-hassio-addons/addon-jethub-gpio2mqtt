@@ -29,7 +29,7 @@ options:
 
 schema:
   log_level: list(trace|debug|info|warning|error)
-  jethub_model: list(auto|jethub-d1|jethub-d2|jethub-h1|manual)
+  jethub_model: list(auto|jethub-d1|jethub-d2|jethub-d3|jethub-h1|manual)
   use_module_config: bool
   custom_config: str?
   mqtt:

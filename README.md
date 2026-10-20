@@ -46,6 +46,12 @@ For Home Assistant Supervised, please select your device manually in the configu
 - 3 inputs
 - (optional) UXM slots control (BOOT, RESET)
 
+### [JetHome JetHub D3-mini](https://docs.iot.jethome.com) (modular controller, 4 UXM slots)
+
+**Exposed peripheral:**
+
+- UXM slots control (RESET, MODE)
+
 ## Installation
 
 Add the repository URL under **Supervisor → Add-on store → ⋮ → Manage add-on repositories**:
