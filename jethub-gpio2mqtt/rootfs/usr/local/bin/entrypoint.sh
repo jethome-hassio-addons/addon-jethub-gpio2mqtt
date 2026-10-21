@@ -18,13 +18,18 @@ CONFIGS_DIR="/etc/gpio2mqtt/configs"
 GENERATED_CONFIG="/data/gpio2mqtt.yaml"
 GPIO_UNEXPORT_SCRIPT="/etc/gpio2mqtt/gpio-unexport.py"
 
-# Logging functions
+# Logging functions.
+# Errors carry ANSI red: the Home Assistant log viewer renders ANSI colors
+# (same as Zigbee2MQTT/ESPHome add-on logs).
+COLOR_RED=$'\033[0;31m'
+COLOR_RESET=$'\033[0m'
+
 log_info() {
     echo "[INFO] $*"
 }
 
 log_error() {
-    echo "[ERROR] $*" >&2
+    echo "${COLOR_RED}[ERROR] $*${COLOR_RESET}" >&2
 }
 
 log_debug() {
