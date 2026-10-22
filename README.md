@@ -5,7 +5,7 @@
 ## About
 
 Expose [JetHub](https://jethome.ru) resources (relays, inputs, etc..) to
-Home Assistant via [gpio2mqtt](https://github.com/jethome-iot/gpio2mqtt)
+Home Assistant via gpio2mqtt
 
 This is the next-generation addon: it uses the new gpio2mqtt MQTT topic
 structure by default, which changes the entity IDs created in Home Assistant.
