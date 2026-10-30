@@ -20,6 +20,7 @@ Usage:
 """
 
 import argparse
+import fcntl
 import os
 import sys
 from pathlib import Path
@@ -30,6 +31,30 @@ except ImportError:
     print("Error: PyYAML is required. Install with: pip install pyyaml")
     sys.exit(1)
 
+# Root of the sysfs tree; overridable for testing
+SYSFS_ROOT = Path(os.environ.get("GPIO_UNEXPORT_SYSFS_ROOT", "/sys"))
+
+# struct gpiochip_info { char name[32]; char label[32]; __u32 lines; }
+# _IOWR(0xB4, 0x01, 68) — stable GPIO uAPI v1 ioctl
+_GPIO_GET_CHIPINFO_IOCTL = 0xC044B401
+
+
+def get_chip_label(chip_path: str) -> str | None:
+    """Read the character device chip label via the GPIO uAPI ioctl."""
+    try:
+        fd = os.open(chip_path, os.O_RDONLY | os.O_CLOEXEC)
+    except OSError:
+        return None
+    try:
+        buf = bytearray(68)
+        fcntl.ioctl(fd, _GPIO_GET_CHIPINFO_IOCTL, buf, True)
+        label = bytes(buf[32:64]).split(b"\0")[0].decode(errors="replace")
+        return label or None
+    except OSError:
+        return None
+    finally:
+        os.close(fd)
+
 
 def get_gpiochip_base(chip_path: str) -> int | None:
     """
@@ -39,11 +64,6 @@ def get_gpiochip_base(chip_path: str) -> int | None:
     The sysfs entries are named by their base number (e.g., gpiochip512),
     not by the /dev device number.
     """
-    chip_name = os.path.basename(chip_path)
-    if not chip_name.startswith("gpiochip"):
-        print(f"Warning: Invalid chip path: {chip_path}")
-        return None
-
     sysfs_path = find_sysfs_gpiochip(chip_path)
     if sysfs_path:
         base_file = sysfs_path / "base"
@@ -56,17 +76,26 @@ def get_gpiochip_base(chip_path: str) -> int | None:
 def find_sysfs_gpiochip(chip_path: str) -> Path | None:
     """Find the sysfs path for a /dev/gpiochipN device."""
     chip_name = os.path.basename(chip_path)
+    if not chip_name.startswith("gpiochip"):
+        print(f"Warning: Invalid chip path: {chip_path}")
+        return None
 
-    # Method 1: via /sys/bus/gpio/devices - look in parent's gpio/ subdirectory
-    # /sys/bus/gpio/devices/gpiochipN -> /sys/devices/.../gpiochipN
-    # The base info is in /sys/devices/.../gpio/gpiochipXXX/base
-    dev_chip_path = Path(f"/sys/bus/gpio/devices/{chip_name}")
+    dev_chip_path = SYSFS_ROOT / "bus/gpio/devices" / chip_name
+
+    # Method 1: on recent kernels (6.x) the device symlink resolves directly
+    # into the legacy sysfs chip directory, which contains `base`
     if dev_chip_path.exists():
         try:
             resolved = dev_chip_path.resolve()
-            # Look in parent directory for gpio/gpiochip* subdirectory
-            parent = resolved.parent
-            gpio_subdir = parent / "gpio"
+            if (resolved / "base").exists():
+                return resolved
+        except OSError:
+            pass
+
+        # Method 2: legacy layout — a gpio/gpiochip* subdirectory next to
+        # the resolved device
+        try:
+            gpio_subdir = resolved.parent / "gpio"
             if gpio_subdir.exists():
                 for gpio_dir in gpio_subdir.glob("gpiochip*"):
                     if (gpio_dir / "base").exists():
@@ -74,33 +103,46 @@ def find_sysfs_gpiochip(chip_path: str) -> Path | None:
         except OSError:
             pass
 
-    # Method 2: Match by device number in /sys/bus/gpio/devices
+    # Method 3: match by chardev device number (major:minor)
     try:
         dev_stat = os.stat(chip_path)
         dev_major_minor = (os.major(dev_stat.st_rdev), os.minor(dev_stat.st_rdev))
 
-        for entry in Path("/sys/bus/gpio/devices").iterdir():
-            if entry.name.startswith("gpiochip"):
-                dev_file = entry / "dev"
-                if dev_file.exists():
-                    dev_content = dev_file.read_text().strip()
-                    major, minor = map(int, dev_content.split(":"))
-                    if (major, minor) == dev_major_minor:
-                        # Found matching device, now find gpio/gpiochip* in parent
-                        resolved = entry.resolve()
-                        parent = resolved.parent
-                        gpio_subdir = parent / "gpio"
-                        if gpio_subdir.exists():
-                            for gpio_dir in gpio_subdir.glob("gpiochip*"):
-                                if (gpio_dir / "base").exists():
-                                    return gpio_dir
-    except (OSError, ValueError):
+        devices = SYSFS_ROOT / "bus/gpio/devices"
+        for entry in devices.iterdir() if devices.is_dir() else []:
+            if not entry.name.startswith("gpiochip"):
+                continue
+            dev_file = entry / "dev"
+            if not dev_file.exists():
+                continue
+            try:
+                major, minor = map(int, dev_file.read_text().strip().split(":"))
+            except (OSError, ValueError):
+                continue
+            if (major, minor) != dev_major_minor:
+                continue
+            gpio_subdir = entry.resolve().parent / "gpio"
+            if gpio_subdir.exists():
+                for gpio_dir in gpio_subdir.glob("gpiochip*"):
+                    if (gpio_dir / "base").exists():
+                        return gpio_dir
+    except OSError:
         pass
 
-    # Method 3: Direct path in /sys/class/gpio (when names match)
-    direct_path = Path(f"/sys/class/gpio/{chip_name}")
-    if direct_path.exists():
-        return direct_path
+    # Method 4: match the chardev chip label (read via the GPIO uAPI ioctl)
+    # against /sys/class/gpio/gpiochip*/label
+    label = get_chip_label(chip_path)
+    if label:
+        class_gpio = SYSFS_ROOT / "class/gpio"
+        for entry in class_gpio.iterdir() if class_gpio.is_dir() else []:
+            if not entry.name.startswith("gpiochip"):
+                continue
+            label_file = entry / "label"
+            try:
+                if label_file.exists() and label_file.read_text().strip() == label:
+                    return entry
+            except OSError:
+                continue
 
     return None
 
@@ -137,12 +179,12 @@ def get_gpiochip_info(chip_path: str) -> dict:
 
 def is_gpio_exported(gpio_num: int) -> bool:
     """Check if a GPIO is currently exported in sysfs."""
-    return Path(f"/sys/class/gpio/gpio{gpio_num}").exists()
+    return (SYSFS_ROOT / "class/gpio" / f"gpio{gpio_num}").exists()
 
 
 def unexport_gpio(gpio_num: int, dry_run: bool = False) -> bool:
     """Unexport a GPIO from sysfs."""
-    unexport_path = Path("/sys/class/gpio/unexport")
+    unexport_path = SYSFS_ROOT / "class/gpio/unexport"
 
     if dry_run:
         print(f"  [DRY-RUN] Would unexport GPIO {gpio_num}")
@@ -268,8 +310,22 @@ def main():
         print(f"GPIO Chip: {chip_path}")
 
         if chip_info["base"] is None:
-            print(f"  Warning: Could not determine base for {chip_path}")
-            print("  (sysfs interface may not be available)")
+            sysfs_active = (SYSFS_ROOT / "class/gpio/unexport").exists()
+            if sysfs_active:
+                # Loud failure: sysfs exports can hold the configured lines
+                # and gpio2mqtt would fail with EBUSY — never pass silently
+                offsets = sorted(gpio["pin"] for gpio in chip_data["gpios"])
+                print(f"  ERROR: could not determine the sysfs base for {chip_path},")
+                print("  but the sysfs GPIO interface is active. Lines exported via")
+                print("  sysfs cannot be used by gpiod and gpio2mqtt will fail with")
+                print(f"  'Device or resource busy'. Configured line offsets: {offsets}")
+                print("  Find the global numbers with: cat /sys/kernel/debug/gpio")
+                print("  and unexport them on the host:")
+                print("    echo <N> > /sys/class/gpio/unexport")
+                error_count += 1
+            else:
+                print(f"  Warning: Could not determine base for {chip_path}")
+                print("  (sysfs interface may not be available)")
             continue
 
         if args.verbose:
@@ -310,6 +366,9 @@ def main():
 
     if args.dry_run:
         print("\n[DRY-RUN mode - no changes were made]")
+
+    if error_count > 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
